@@ -1,12 +1,11 @@
 import numpy as np
 
+from . import network_expr
 from ..errors import KaffeError, print_stderr
 from ..graph import GraphBuilder, NodeMapper
 from ..layers import NodeKind
 from ..transformers import (DataInjector, DataReshaper, NodeRenamer, ReLUFuser,
                             BatchNormScaleBiasFuser, BatchNormPreprocessor, ParameterNamer)
-
-from . import network
 
 
 def get_padding_type(kernel_params, input_shape, output_shape):
@@ -44,7 +43,7 @@ class TensorFlowNode(object):
 
     def format(self, arg):
         '''Returns a string representation for the given value.'''
-        return "'%s'" % arg if isinstance(arg, basestring) else str(arg)
+        return "'%s'" % arg if isinstance(arg, str) else str(arg)
 
     def pair(self, key, value):
         '''Returns key=formatted(value).'''
@@ -82,7 +81,7 @@ class TensorFlowMapper(NodeMapper):
         input_shape = node.get_only_parent().output_shape
         padding = get_padding_type(kernel_params, input_shape, node.output_shape)
         # Only emit the padding if it's not the default value.
-        padding = {'padding': padding} if padding != network.DEFAULT_PADDING else {}
+        padding = {'padding': padding} if padding != network_expr.DEFAULT_PADDING else {}
         return (kernel_params, padding)
 
     def map_convolution(self, node):
@@ -118,9 +117,9 @@ class TensorFlowMapper(NodeMapper):
                               kernel_params.stride_h, kernel_params.stride_w, **padding)
 
     def map_inner_product(self, node):
-        #TODO: Axis
+        # TODO: Axis
         assert node.parameters.axis == 1
-        #TODO: Unbiased
+        # TODO: Unbiased
         assert node.parameters.bias_term == True
         return MaybeActivated(node)('fc', node.parameters.num_output)
 
